@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client panel - KagazAstra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header class="bg-slate-900 text-white">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+      <a href="/" class="text-xl font-extrabold">📄 KagazAstra</a>
+      <div class="flex items-center gap-4 text-sm">
+        <span id="panelUser" class="hidden sm:inline"></span>
+        <a href="/" class="hover:text-emerald-300">Document tools</a>
+        <button class="logoutButton rounded-lg bg-white/10 px-3 py-1.5 hover:bg-white/20">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <main class="mx-auto max-w-7xl space-y-6 px-4 py-8">
+    <section>
+      <h1 class="text-3xl font-bold">Client panel</h1>
+      <p class="mt-1 text-sm text-slate-500">Account, plan requests, payment status, and recent tool usage.</p>
+    </section>
+    <p id="panelMessage" class="hidden rounded-lg p-3 text-sm" role="status"></p>
+    <section class="grid gap-4 sm:grid-cols-3">
+      <article class="rounded-xl border bg-white p-5 shadow-sm">
+        <p class="text-sm text-slate-500">Account</p>
+        <p id="clientName" class="mt-2 text-lg font-bold">Loading...</p>
+        <p id="clientEmail" class="text-sm text-slate-500"></p>
+      </article>
+      <article class="rounded-xl border bg-white p-5 shadow-sm">
+        <p class="text-sm text-slate-500">Active plan</p>
+        <p id="activePlan" class="mt-2 text-lg font-bold">No active plan</p>
+        <p id="planExpiry" class="text-sm text-slate-500"></p>
+      </article>
+      <article class="rounded-xl border bg-white p-5 shadow-sm">
+        <p class="text-sm text-slate-500">Recorded tool uses</p>
+        <p id="usageCount" class="mt-2 text-3xl font-bold">0</p>
+      </article>
+    </section>
+    <section class="rounded-xl border bg-white p-5 shadow-sm">
+      <h2 class="text-lg font-bold">Request plan activation</h2>
+      <p class="mt-1 text-sm text-slate-500">Demo request only—not a verified UPI payment. Admin review is required before a plan becomes active.</p>
+      <form id="planRequestForm" class="mt-4 flex flex-wrap items-end gap-3">
+        <label class="min-w-60 flex-1 text-sm font-medium">Plan
+          <select name="plan_id" class="mt-1 w-full rounded-lg border bg-white p-2.5">
+            <option value="sachet_20">Exam Pass Sachet — ₹20 / 30 days</option>
+            <option value="sachet_50">Aspirant Pro — ₹50 / 30 days</option>
+            <option value="cafe_vip_100">Cyber Café VIP — ₹100 / 30 days</option>
+          </select>
+        </label>
+        <button class="rounded-lg bg-blue-700 px-5 py-2.5 font-bold text-white hover:bg-blue-800">Submit for review</button>
+      </form>
+    </section>
+    <section class="grid gap-6 lg:grid-cols-2">
+      <article class="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <h2 class="border-b p-4 text-lg font-bold">Payment requests</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Plan</th><th class="p-3">Amount</th><th class="p-3">Status</th></tr></thead>
+            <tbody id="clientPayments"></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <h2 class="border-b p-4 text-lg font-bold">Recent usage</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Tool</th><th class="p-3">Details</th><th class="p-3">Date</th></tr></thead>
+            <tbody id="clientUsage"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script src="/static/panel.js"></script>
+</body>
+</html>

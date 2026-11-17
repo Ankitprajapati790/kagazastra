@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KagazAstra - Document Studio</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .gradient-header { background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); }
+    mark { background-color: #fde047; color: #000; padding: 0 2px; border-radius: 2px; font-weight: bold; }
+    #pdfPageDisplay:fullscreen { background-color: #ffffff; color: #1e293b; padding: 4rem; font-size: 1.1rem; border: none; overflow-y: auto; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+  <!-- Header -->
+  <header class="gradient-header text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <span class="text-3xl font-extrabold tracking-tight">📄 KagazAstra</span>
+        <span class="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">AI: Groq</span>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="#editor" class="text-sm font-medium hover:text-emerald-200">PDF Studio</a>
+        <a href="#sarkari" class="text-sm font-medium hover:text-emerald-200">Sarkari Presets</a>
+        <a href="#search" class="text-sm font-medium hover:text-emerald-200">Roll Finder</a>
+        <button id="openAstrabot" type="button" class="text-sm font-medium hover:text-emerald-200">AstraBot</button>
+        <a href="/login" class="text-sm font-medium hover:text-emerald-200">Client / Admin Login</a>
+        <a href="#billing" class="text-sm font-medium bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg text-white font-bold transition">Plans</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="max-w-7xl mx-auto px-4 py-8 text-center">
+    <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 mb-2">Document Studio for Indian Exams & Offices</h1>
+    <p class="text-slate-600 max-w-2xl mx-auto text-sm md:text-base">Resize Sarkari exam photos, work with PDFs, and fix Hindi KrutiDev fonts. AstraBot sends its selected photo and instruction to Groq Cloud for AI processing.</p>
+  </section>
+
+  <!-- Main Workspace Tabs -->
+  <main class="max-w-7xl mx-auto px-4 flex-grow w-full pb-16 space-y-8">
+    
+    <!-- 1. Sarkari Exam Resizer & DOP Strip -->
+    <section id="sarkari" class="bg-white rounded-xl shadow p-6 border border-slate-200">
+      <div class="flex items-center justify-between mb-4 border-b pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 flex items-center"><i class="fa-solid fa-compress text-blue-600 mr-2"></i>Sarkari Exam Photo, Signature & Exact-KB Resizer</h2>
+          <p class="text-xs text-slate-500">SSC (20-50 KB), UPSC (350x350), IBPS Thumb (200 DPI strict), NEET Postcard</p>
+        </div>
+        <span class="text-xs font-semibold bg-blue-100 text-blue-800 px-2.5 py-1 rounded">Preset Engine v3.0</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form id="resizerForm" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Select Candidate Photo / Signature</label>
+            <input type="file" id="photoInput" accept="image/*" class="w-full text-sm border rounded-lg p-2 bg-slate-50 focus:outline-none" required>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Exam Preset</label>
+              <select id="examPreset" class="w-full text-sm border rounded-lg p-2 bg-white">
+                <option value="ssc">SSC CGL/CHSL (20-50 KB)</option>
+                <option value="upsc">UPSC IAS (350x350 px)</option>
+                <option value="ibps_thumb">IBPS Thumb Impression (200 DPI)</option>
+                <option value="neet_postcard">NEET Postcard Photo</option>
+                <option value="custom">Custom Target Size</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Exact Target KB</label>
+              <input type="number" id="targetKb" value="35" class="w-full text-sm border rounded-lg p-2 bg-white">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Candidate Name (Optional)</label>
+              <input type="text" id="candidateName" placeholder="e.g. RAHUL SHARMA" class="w-full text-sm border rounded-lg p-2 bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Date of Photo (DOP)</label>
+              <input type="text" id="dop" placeholder="DD/MM/YYYY" class="w-full text-sm border rounded-lg p-2 bg-white">
+            </div>
+          </div>
+          <button type="submit" id="resizerSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Generate & Download Resized Photo</button>
+          <p id="resizerStatus" class="text-xs text-green-600 hidden"></p>
+        </form>
+
+        <div class="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center bg-slate-50" id="previewContainer">
+          <p class="text-xs text-slate-400 mb-2">Processed Output Preview</p>
+          <img id="resizerPreview" class="max-h-56 rounded border shadow-sm hidden" alt="Processed Preview">
+          <p id="previewText" class="text-slate-400 text-sm">Upload an image to see live output</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Direct Native PDF Studio & Transparent Signatures -->
+    <section id="editor" class="bg-white rounded-xl shadow p-6 border border-slate-200">
+      <div class="flex items-center justify-between mb-4 border-b pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 flex items-center"><i class="fa-solid fa-pen-nib text-emerald-600 mr-2"></i>Direct Native PDF Studio & Digital Signature Pad</h2>
+          <p class="text-xs text-slate-500">Sign with transparent background and add instant date/office seals</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-1">
+          <div class="mb-3">
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Signature Name</label>
+            <input type="text" id="signatureText" class="w-full rounded-lg border bg-slate-50 p-2 text-sm" placeholder="Type your name here...">
+          </div>
+        </div>
+        <div class="md:col-span-2">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-slate-700 uppercase">Draw Digital Signature</span>
+            <button id="clearSig" class="text-xs text-red-600 hover:underline">Clear Canvas</button>
+          </div>
+          <canvas id="sigCanvas" width="600" height="200" class="w-full border-2 border-slate-300 rounded-lg bg-white cursor-crosshair shadow-inner"></canvas>
+          <div class="flex space-x-2 mt-3">
+            <button id="downloadSig" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold">Save Transparent PNG</button>
+            <button id="addDateStamp" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-semibold">Insert Today's Date Stamp</button>
+          </div>
+        </div>
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 mb-2">1-Click Quick Stamps</h3>
+            <ul class="text-xs text-slate-600 space-y-2">
+              <li class="p-2 bg-white rounded border">✓ <b>VERIFIED SEEL:</b> Self-Attested Copy</li>
+              <li class="p-2 bg-white rounded border">📅 <b>DATE FORMAT:</b> <span id="currentDateStr"></span></li>
+              <li class="p-2 bg-white rounded border">🛡️ <b>AIRGAP:</b> 0-Server Upload Guarentee</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. KrutiDev Hindi Font Fixer & Roll Finder -->
+    <section id="search" class="bg-white rounded-xl shadow p-6 border border-slate-200">
+      <div class="flex items-center justify-between mb-4 border-b pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 flex items-center"><i class="fa-solid fa-magnifying-glass text-indigo-600 mr-2"></i>Bilingual KrutiDev Hindi Font Fixer & 1,000-Page Roll Number Finder</h2>
+          <p class="text-xs text-slate-500">Searches across Latin and Devanagari Unicode & KrutiDev 010 gazette PDFs</p>
+        </div>
+      </div>
+
+      <form id="rollSearchForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Merit List / Result PDF</label>
+          <input type="file" id="searchPdfFile" accept="application/pdf" class="w-full text-sm border rounded-lg p-2 bg-slate-50" required>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Roll Number or Name</label>
+          <input type="text" id="searchQuery" placeholder="e.g. 230104592 or राहुल" class="w-full text-sm border rounded-lg p-2 bg-white" required>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" id="scanBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Scan Gazette Document</button>
+        </div>
+      </form>
+
+      <div id="searchResult" class="hidden mt-6 border-t pt-4">
+        <div class="flex justify-between items-center mb-4">
+            <p id="matchCountText" class="text-sm font-bold text-green-700 bg-green-50 px-3 py-1 rounded-full"></p>
+            <button id="expandSearchView" class="text-sm text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"><i class="fa-solid fa-expand"></i> Expand Fullscreen</button>
+        </div>
+        <div id="pdfPageDisplay" class="bg-slate-50 border border-slate-300 rounded-lg p-6 h-96 overflow-y-auto font-mono text-sm leading-relaxed shadow-inner relative">
+            <p class="text-slate-400 text-center mt-10">Upload a document and search to see results here.</p>
+        </div>
+        <div id="pdfPaginationControls" class="flex justify-center items-center space-x-4 mt-4"></div>
+      </div>
+    </section>
+
+    <!-- 4. Smart File Converter Module -->
+    <section id="file-converter" class="bg-white rounded-xl shadow p-6 border border-slate-200">
+      <h2 class="text-xl font-bold text-slate-900 flex items-center mb-2"><i class="fa-solid fa-file-arrow-up text-green-600 mr-2"></i>Smart File Converter</h2>
+      <p class="text-xs text-slate-500 mb-6">Upload any file (PDF, DOCX, Image, Excel). We will automatically show you all possible conversion options.</p>
+      
+      <div id="converterDropZone" class="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center bg-slate-50 hover:bg-slate-100 transition cursor-pointer mb-6">
+        <input type="file" id="converterFileInput" class="hidden" accept="*/*">
+        <i class="fa-solid fa-cloud-arrow-up text-4xl text-indigo-500 mb-3"></i>
+        <p class="text-sm font-semibold text-slate-700">Click to upload or drag and drop</p>
+        <p class="text-xs text-slate-400 mt-1">PDF, DOCX, JPG, PNG, XLSX, etc. (Max 100MB)</p>
+      </div>
+
+      <div id="selectedFileInfo" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-file-lines text-blue-500 text-xl"></i>
+            <div>
+                <p id="selectedFileName" class="text-sm font-bold text-slate-800">filename.pdf</p>
+                <p id="selectedFileSize" class="text-xs text-slate-500">2.5 MB</p>
+            </div>
+        </div>
+        <button id="clearSelectedFile" class="text-red-500 hover:text-red-700 text-sm font-semibold"><i class="fa-solid fa-xmark"></i> Remove</button>
+      </div>
+
+      <div id="conversionOptions" class="hidden">
+        <h3 class="text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">Available Conversions</h3>
+        <div id="conversionButtonsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
+      <div id="conversionResult" class="hidden mt-6 bg-emerald-50 border border-emerald-200 rounded-lg p-5 text-center">
+        <i class="fa-solid fa-circle-check text-emerald-500 text-3xl mb-2"></i>
+        <h4 class="text-lg font-bold text-emerald-800">Conversion Successful!</h4>
+        <p class="text-sm text-emerald-600 mb-4">Your file is ready to be downloaded.</p>
+        <a id="downloadConvertedFile" href="#" class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg transition shadow-md"><i class="fa-solid fa-download mr-2"></i> Download Converted File</a>
+      </div>
+    </section>
+
+    <!-- 5. AI Document Summarizer -->
+    <section id="summarizer" class="bg-white rounded-xl shadow p-6 border border-slate-200">
+      <div class="flex items-center justify-between mb-4 border-b pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 flex items-center"><i class="fa-solid fa-wand-magic-sparkles text-purple-600 mr-2"></i>AI Exam Capsule Summarizer (50-100 Pages)</h2>
+          <p class="text-xs text-slate-500">Upload a large book or document, and our AI will extract key milestones, legal provisions, and generate short notes.</p>
+        </div>
+      </div>
+
+      <form id="summarizerForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Upload Document (PDF / DOCX / TXT)</label>
+          <input type="file" id="summarizerFile" accept=".pdf,.docx,.doc,.txt" class="w-full text-sm border rounded-lg p-2 bg-slate-50" required>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" id="summarizeBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-lg text-sm transition"><i class="fa-solid fa-robot mr-2"></i> Summarize Now</button>
+        </div>
+      </form>
+
+      <div id="summaryLoading" class="hidden text-center py-10">
+        <i class="fa-solid fa-spinner fa-spin text-4xl text-purple-500 mb-4"></i>
+        <h3 class="text-lg font-bold text-slate-800">Reading your document...</h3>
+        <p class="text-sm text-slate-500">Our AI is scanning the pages. This may take 10-20 seconds.</p>
+      </div>
+
+      <div id="summaryResult" class="hidden bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-robot text-purple-600"></i> Summary Result
+              <span id="summaryMethodBadge" class="text-xs font-bold px-2 py-1 rounded bg-slate-200 text-slate-700"></span>
+          </h3>
+          <span id="pagesRead" class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full">0 Pages Scanned</span>
+        </div>
+        <div id="aiSummaryText" class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-sans bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-inner"></div>
+      </div>
+    </section>
+
+    <!-- 6. Monetization & UPI Sachet Checkout -->
+    <section id="billing" class="bg-slate-900 text-white rounded-xl shadow p-6">
+      <h2 class="text-xl font-bold mb-1 flex items-center"><i class="fa-solid fa-indian-rupee-sign text-amber-400 mr-2"></i>Plan Requests & Cyber Café Bulk Terminal</h2>
+      <p class="text-xs text-slate-400 mb-6">Demo requests need admin approval. No UPI payment is collected or verified.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 flex flex-col justify-between">
+          <div><h3 class="font-bold text-base text-amber-300">Exam Pass Sachet</h3><p class="text-3xl font-extrabold my-2">₹20 <span class="text-xs text-slate-400 font-normal">/ month</span></p><p class="text-xs text-slate-300">Plan request for exam document tools; active for 30 days after admin approval.</p></div>
+          <button onclick="payPlan('sachet_20', 20)" class="mt-4 w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2 rounded-lg text-xs uppercase tracking-wide">Request activation · ₹20</button>
+        </div>
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 flex flex-col justify-between">
+          <div><h3 class="font-bold text-base text-cyan-300">Aspirant Pro</h3><p class="text-3xl font-extrabold my-2">₹50 <span class="text-xs text-slate-400 font-normal">/ month</span></p><p class="text-xs text-slate-300">Plan request for AstraBot and document tools; 30 days after admin approval.</p></div>
+          <button onclick="payPlan('sachet_50', 50)" class="mt-4 w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold py-2 rounded-lg text-xs uppercase tracking-wide">Request activation · ₹50</button>
+        </div>
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 flex flex-col justify-between">
+          <div><h3 class="font-bold text-base text-emerald-300">Cyber Café VIP</h3><p class="text-3xl font-extrabold my-2">₹100 <span class="text-xs text-slate-400 font-normal">/ month</span></p><p class="text-xs text-slate-300">Cyber café plan request; 30 days after admin approval.</p></div>
+          <button onclick="payPlan('cafe_vip_100', 100)" class="mt-4 w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg text-xs uppercase tracking-wide">Request activation · ₹100</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-100 border-t py-4 text-center text-xs text-slate-500">
+    KagazAstra • FastAPI, Groq & MongoDB
+    <span class="mx-1">·</span><a class="text-blue-700 hover:underline" href="/client">Client panel</a>
+    <span class="mx-1">·</span><a class="text-blue-700 hover:underline" href="/admin">Admin panel</a>
+  </footer>
+
+  <aside id="astrabotWidget" class="fixed bottom-5 right-5 z-[60]">
+    <section id="astrabotPanel" class="mb-3 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <header class="flex items-center justify-between bg-rose-600 px-4 py-3 text-white">
+        <div class="flex min-w-0 items-center gap-3">
+          <img src="/static/astrabot-assistant.jpg" alt="" class="h-10 w-10 rounded-full border-2 border-white/70 object-cover">
+          <div class="min-w-0"><h2 class="font-bold">AstraBot</h2><p class="text-xs text-rose-100">Hindi, English & Hinglish • AI photo assistant</p></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="minimizeAstrabot" type="button" class="ml-3 rounded p-2 text-sm text-rose-200 hover:bg-rose-300 transition" aria-label="Minimize AstraBot" style="cursor: pointer;"><i class="fa-solid fa-minus text-rose-300"></i></button>
+          <button id="closeAstrabot" type="button" class="ml-3 rounded p-2 text-xl leading-none hover:bg-rose-700" aria-label="Close AstraBot"><i class="fa-solid fa-xmark text-rose-400"></i></button>
+        </div>
+      </header>
+      <div id="astrabotChatContainer" class="max-h-64 min-h-36 space-y-3 overflow-y-auto bg-slate-50 p-4" aria-live="polite">
+        <div class="flex items-start gap-2">
+          <img src="/static/astrabot-assistant.jpg" alt="" class="h-7 w-7 rounded-full object-cover">
+          <div class="max-w-[85%] rounded-lg border bg-white p-2.5 text-xs text-slate-700 shadow-sm">Namaste! Main AstraBot hoon. Koi bhi file (PDF/Word/Image) upload karein aur uske baare me kuch bhi poochein.</div>
+        </div>
+      </div>
+      <div class="space-y-3 border-t p-3">
+        <input type="file" id="astrabotFileInput" accept="*/*" class="block w-full text-xs text-slate-500 file:mr-2 file:rounded-md file:border-0 file:bg-rose-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-rose-700 hover:file:bg-rose-100">
+        <input type="text" id="candidateNameDirect" maxlength="200" placeholder="Name on photo (Hindi/English, optional)" class="w-full rounded-lg border bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500">
+        <div class="flex items-center gap-2">
+          <input type="text" id="voiceCommandInput" maxlength="2000" placeholder="Bol kar ya type karke command dein..." class="min-w-0 flex-1 rounded-lg border bg-slate-50 p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500">
+          <button id="micBtn" type="button" class="shrink-0 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-100" aria-label="Use microphone"><i class="fa-solid fa-microphone"></i></button>
+          <button id="sendActionBtn" type="button" class="shrink-0 rounded-lg bg-rose-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-rose-700">Send</button>
+        </div>
+      </div>
+    </section>
+    <button id="astrabotLauncher" type="button" class="ml-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-rose-600 shadow-xl transition hover:scale-105" aria-label="Open AstraBot" title="Chat with AstraBot">
+      <img src="/static/astrabot-assistant.jpg" alt="AstraBot" class="h-full w-full object-cover">
+    </button>
+  </aside>
+
+  <script>
+    // ===== 1. RESIZER LOGIC =====
+    document.getElementById('resizerForm')?.addEventListener('submit',async function(e){
+        e.preventDefault();
+        const btn = document.getElementById('resizerSubmitBtn');
+        const status = document.getElementById('resizerStatus');
+        const photoInput = document.getElementById('photoInput');
+        const preset = document.getElementById('examPreset');
+        const targetKb = document.getElementById('targetKb');
+        const candidateName = document.getElementById('candidateName');
+        const dop = document.getElementById('dop');
+        
+        if(!photoInput.files[0]){ alert('Please select an image file.'); return; }
+        
+        btn.textContent = 'Processing...'; btn.disabled = true; status.classList.add('hidden');
+        
+        const fd = new FormData();
+        fd.append('file', photoInput.files[0]);
+        fd.append('preset', preset.value);
+        fd.append('target_kb', targetKb.value);
+        if(candidateName.value) fd.append('candidate_name', candidateName.value);
+        if(dop.value) fd.append('dop', dop.value);
+        
+        try{
+            const r = await fetch('http://127.0.0.1:8000/api/resize-photo',{method:'POST',body:fd});
+            if(!r.ok) throw new Error('Server error: '+r.status);
+            const b = await r.blob();
+            const u = URL.createObjectURL(b);
+            const pi = document.getElementById('resizerPreview');
+            const pc = document.getElementById('previewContainer');
+            const pt = document.getElementById('previewText');
+            pi.src = u; pi.classList.remove('hidden'); pc.classList.remove('bg-slate-50'); pc.classList.add('bg-white','border-emerald-200');
+            pt.textContent = 'Resized image ready!';
+            status.textContent = '✅ Photo resized successfully!'; status.classList.remove('hidden');
+            const a = document.createElement('a'); a.href = u; a.download = 'resized_'+photoInput.files[0].name.split('.')[0]+'.jpg';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }catch(err){
+            status.textContent = '❌ Error: '+err.message; status.className = 'text-xs text-red-600'; status.classList.remove('hidden');
+        }finally{
+            btn.textContent = 'Generate & Download Resized Photo'; btn.disabled = false;
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // ===== 2. ASTRA BOT UI LOGIC =====
+        const minimizeBtn = document.getElementById('minimizeAstrabot');
+        const closeBtn = document.getElementById('closeAstrabot');
+        const astrabotPanel = document.getElementById('astrabotPanel');
+        const astrabotLauncher = document.getElementById('astrabotLauncher');
+        
+        if (minimizeBtn && closeBtn && astrabotPanel) {
+            astrabotPanel.classList.remove('hidden'); astrabotPanel.style.display = 'block';
+            let isMinimized = false;
+            
+            minimizeBtn.addEventListener('click', function() {
+                isMinimized = !isMinimized;
+                if (isMinimized) {
+                    astrabotPanel.classList.add('hidden'); astrabotPanel.style.display = 'none';
+                    minimizeBtn.innerHTML = '<i class="fa-solid fa-expand text-rose-300"></i>';
+                } else {
+                    astrabotPanel.classList.remove('hidden'); astrabotPanel.style.display = 'block';
+                    minimizeBtn.innerHTML = '<i class="fa-solid fa-minus text-rose-300"></i>';
+                }
+            });
+            
+            closeBtn.addEventListener('click', function() {
+                astrabotPanel.classList.add('hidden'); astrabotPanel.style.display = 'none';
+                astrabotLauncher.focus(); isMinimized = false; 
+            });
+
+            if (astrabotLauncher) {
+                astrabotLauncher.addEventListener('click', function() {
+                    if (astrabotPanel.classList.contains('hidden') || astrabotPanel.style.display === 'none') {
+                        astrabotPanel.classList.remove('hidden'); astrabotPanel.style.display = 'block'; isMinimized = false;
+                        if (minimizeBtn) minimizeBtn.innerHTML = '<i class="fa-solid fa-minus text-rose-300"></i>';
+                    } else {
+                        astrabotPanel.classList.add('hidden'); astrabotPanel.style.display = 'none'; isMinimized = true;
+                    }
+                });
+            }
+        }
+        
+        // ===== 3. SIGNATURE PAD LOGIC =====
+        const sc = document.getElementById('sigCanvas');
+        const cs = document.getElementById('clearSig');
+        const st = document.getElementById('signatureText');
+        const ds = document.getElementById('downloadSig');
+        const ads = document.getElementById('addDateStamp');
+        const currentDateStr = document.getElementById('currentDateStr');
+        
+        if (currentDateStr) currentDateStr.textContent = new Date().toLocaleDateString('en-IN');
+
+        let c = null; 
+        if (sc) {
+            c = sc.getContext('2d'); let id = false;
+            c.fillStyle = 'white'; c.fillRect(0, 0, sc.width, sc.height);
+            c.strokeStyle = 'black'; c.lineWidth = 3; c.lineCap = 'round';
+            sc.addEventListener('mousedown', e => { id = true; c.beginPath(); c.moveTo(e.offsetX, e.offsetY); });
+            sc.addEventListener('mousemove', e => { if (id) { c.lineTo(e.offsetX, e.offsetY); c.stroke(); } });
+            sc.addEventListener('mouseup', () => id = false); sc.addEventListener('mouseout', () => id = false);
+        }
+        
+        if (cs && sc && c) cs.addEventListener('click', () => { c.fillStyle = 'white'; c.fillRect(0, 0, sc.width, sc.height); });
+        if (ds && sc && c) ds.addEventListener('click', () => { 
+            const n = (st && st.value) || 'signature'; const l = document.createElement('a'); 
+            l.download = n.replace(/\s+/g, '_') + '_signature.png'; l.href = sc.toDataURL('image/png'); l.click(); 
+        });
+        if (ads && sc && c) ads.addEventListener('click', () => { 
+            const n = new Date(); c.fillStyle = 'black'; c.font = '16px Arial'; c.fillText(n.toLocaleDateString('en-IN'), 10, sc.height - 20);
+        });
+
+        // ===== 4. ASTRA BOT CHAT LOGIC (UPDATED) =====
+        const sab = document.getElementById('sendActionBtn');
+        const vci = document.getElementById('voiceCommandInput');
+        const acc = document.getElementById('astrabotChatContainer');
+        const afi = document.getElementById('astrabotFileInput');
+        const cnd = document.getElementById('candidateNameDirect');
+        let astrabotSelectedFile = null; 
+
+        function abm(t, ty) {
+            if (!acc) return;
+            const md = document.createElement('div'); md.className = 'flex items-start gap-2';
+            const ai = ty === 'user' ? '<img src="/static/astrabot-assistant.jpg" alt="User" class="h-7 w-7 rounded-full object-cover bg-blue-500">' : '<img src="/static/astrabot-assistant.jpg" alt="AstraBot" class="h-7 w-7 rounded-full object-cover bg-rose-500">';
+            const bc = ty === 'user' ? 'rounded-lg bg-blue-600 text-white' : 'rounded-lg bg-rose-200 text-rose-800';
+            md.innerHTML = `${ai}<div class="${bc} max-w-[85%] p-2.5 text-xs rounded">${eh(t)}</div>`;
+            acc.appendChild(md); acc.scrollTop = acc.scrollHeight;
+        }
+        function eh(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        
+        // File select karne par usko store karein (bar bar remove nahi hoga)
+        if (afi) {
+            afi.addEventListener('change', function() {
+                const f = this.files[0];
+                if (f) {
+                    astrabotSelectedFile = f;
+                    abm(`📁 File attached: ${f.name}. Ab aap is file ke baare me jitne chahe sawal pooch sakte hain.`, 'astrbot');
+                    this.value = ''; 
+                }
+            });
+        }
+
+        if (sab && vci) {
+            sab.addEventListener('click', function() {
+                const cText = vci.value.trim();
+                if (!cText && !astrabotSelectedFile) { abm("⚠️ Please ek file select karein ya command type karein.", 'astrbot'); return; }
+                
+                if (cText) { abm(cText, 'user'); vci.value = ''; }
+                
+                const cn2 = cnd ? cnd.value : 'User';
+                const fd3 = new FormData();
+                
+                // File tabhi jayegi jab attach hui hogi
+                if (astrabotSelectedFile) fd3.append('file', astrabotSelectedFile);
+                
+                fd3.append('command', cText || "Process this file");
+                if (cn2) fd3.append('candidate_name', cn2);
+
+                // ❌ astrabotSelectedFile = null; (Hata diya gaya hai taaki file persist rahe)
+
+                afi.disabled = true; sab.disabled = true;
+
+                fetch('http://127.0.0.1:8000/api/astrabot/execute', { method: 'POST', body: fd3 })
+                .then(r => { if (!r.ok) return r.json().then(err => { throw new Error(err.detail || "Server Error") }); return r.json(); })
+                .then(d => { 
+                    abm(d.bot_reply || 'Kaam ho gaya!', 'astrbot'); 
+                    
+                    if (d.download_file) {
+                        const md = document.createElement('div');
+                        md.className = 'flex items-start gap-2 mt-2';
+                        const ai = '<img src="/static/astrabot-assistant.jpg" alt="AstraBot" class="h-7 w-7 rounded-full object-cover bg-rose-500">';
+                        
+                        const imageHTML = `
+                            <div class="rounded-lg bg-rose-100 p-2.5 text-xs text-rose-800 max-w-[85%] flex flex-col gap-2 shadow-sm border border-rose-200">
+                                <img src="${d.download_file}" class="rounded max-h-48 object-contain border border-rose-300">
+                                <a href="${d.download_file}" download="${d.filename}" class="bg-rose-600 text-white text-center py-2 rounded font-bold hover:bg-rose-700 transition flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-download"></i> Download Edited Photo
+                                </a>
+                            </div>
+                        `;
+                        md.innerHTML = `${ai}${imageHTML}`;
+                        acc.appendChild(md);
+                        acc.scrollTop = acc.scrollHeight;
+                    }
+                })
+                .catch(err => { abm('Error: ' + err.message, 'astrbot'); })
+                .finally(() => { afi.disabled = false; sab.disabled = false; });
+            });
+        }
+        if (vci) vci.addEventListener('keypress', e => { if (e.key === 'Enter') sab.click(); });
+        
+        // ===== 5. MIC / VOICE INPUT =====
+        const micBtn = document.getElementById('micBtn');
+        if (micBtn && 'webkitSpeechRecognition' in window) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
+            micBtn.addEventListener('click', function() {
+                recognition.start(); micBtn.innerHTML = '<i class="fa-solid fa-microphone text-red-500 animate-pulse"></i>'; micBtn.classList.add('bg-red-100');
+            });
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript; vci.value = transcript;
+                micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>'; micBtn.classList.remove('bg-red-100'); sab.click(); 
+            };
+            recognition.onerror = function(event) {
+                micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>'; micBtn.classList.remove('bg-red-100');
+                let errorMsg = "Voice error: ";
+                if (event.error === 'network') errorMsg = "Network error! Check internet.";
+                else if (event.error === 'not-allowed') errorMsg = "Microphone permission blocked.";
+                else if (event.error === 'no-speech') errorMsg = "No speech detected.";
+                else errorMsg = errorMsg + event.error;
+                abm(errorMsg, 'astrbot');
+            };
+            recognition.onend = function() { micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>'; micBtn.classList.remove('bg-red-100'); };
+        } else if (micBtn) { micBtn.title = 'Voice input not supported'; micBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
+
+        // ===== 6. ROLL NUMBER SEARCH & HIGHLIGHT LOGIC =====
+        const rollSearchForm = document.getElementById('rollSearchForm');
+        let currentPdfData = null;
+
+        if (rollSearchForm) {
+            rollSearchForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const fileInput = document.getElementById('searchPdfFile');
+                const queryInput = document.getElementById('searchQuery');
+                const resultDiv = document.getElementById('searchResult');
+                const matchCount = document.getElementById('matchCountText');
+                const pageDisplay = document.getElementById('pdfPageDisplay');
+                const scanBtn = document.getElementById('scanBtn');
+
+                if (!fileInput.files[0] || !queryInput.value.trim()) { alert("Please select a file and enter a query."); return; }
+                scanBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scanning...'; scanBtn.disabled = true;
+
+                const fd = new FormData(); fd.append('file', fileInput.files[0]); fd.append('query', queryInput.value.trim());
+
+                try {
+                    const response = await fetch('http://127.0.0.1:8000/api/search-pdf', { method: 'POST', body: fd });
+                    if (!response.ok) throw new Error("Search failed. Server error.");
+                    const data = await response.json(); currentPdfData = data; resultDiv.classList.remove('hidden');
+                    matchCount.innerHTML = `✅ ${data.total_matches} Matches Found`;
+                    if (data.total_matches === 0) {
+                        matchCount.className = "text-sm font-bold text-red-700 bg-red-50 px-3 py-1 rounded-full";
+                        pageDisplay.innerHTML = "<p class='text-center text-slate-500 mt-10'>No matches found for this query in the document.</p>";
+                        document.getElementById('pdfPaginationControls').innerHTML = ''; return;
+                    } else { matchCount.className = "text-sm font-bold text-green-700 bg-green-50 px-3 py-1 rounded-full"; }
+
+                    let firstMatchPage = 1;
+                    for (let page of data.page_results) { if (page.match_found) { firstMatchPage = page.page_number; break; } }
+                    renderPdfPage(firstMatchPage, data); renderPagination(data.total_pages, firstMatchPage);
+                } catch (err) { alert("Error: " + err.message); } finally { scanBtn.innerHTML = 'Scan Gazette Document'; scanBtn.disabled = false; }
+            });
+        }
+
+        function renderPdfPage(pageNumber, data) {
+            const pageData = data.page_results.find(p => p.page_number === pageNumber);
+            const pageDisplay = document.getElementById('pdfPageDisplay');
+            if (pageData) {
+                pageDisplay.innerHTML = `<div class="mb-4 text-xs font-bold text-slate-400 border-b pb-2 sticky top-0 bg-slate-50">Page ${pageNumber} of ${data.total_pages}</div><div class="whitespace-pre-wrap">${pageData.highlighted_text}</div>`;
+                const firstMark = pageDisplay.querySelector('mark');
+                if (firstMark) { setTimeout(() => { firstMark.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }
+            }
+        }
+        function renderPagination(totalPages, currentPage) {
+            const pagination = document.getElementById('pdfPaginationControls');
+            if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+            pagination.innerHTML = `
+                <button onclick="changePdfPage(${currentPage - 1})" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 transition" ${currentPage === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i> Prev</button>
+                <span class="text-sm font-semibold text-slate-700">Page ${currentPage} / ${totalPages}</span>
+                <button onclick="changePdfPage(${currentPage + 1})" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 transition" ${currentPage === totalPages ? 'disabled' : ''}>Next <i class="fa-solid fa-chevron-right"></i></button>`;
+        }
+        window.changePdfPage = function(page) {
+            if (page < 1 || page > currentPdfData.total_pages) return;
+            renderPdfPage(page, currentPdfData); renderPagination(currentPdfData.total_pages, page);
+        };
+        const expandBtn = document.getElementById('expandSearchView');
+        if (expandBtn) {
+            expandBtn.addEventListener('click', function() {
+                const pageDisplay = document.getElementById('pdfPageDisplay');
+                if (pageDisplay.requestFullscreen) pageDisplay.requestFullscreen();
+                else if (pageDisplay.webkitRequestFullscreen) pageDisplay.webkitRequestFullscreen();
+            });
+        }
+
+        // ===== 7. SMART FILE CONVERTER LOGIC =====
+        const dropZone = document.getElementById('converterDropZone');
+        const fileInput = document.getElementById('converterFileInput');
+        const fileInfoBox = document.getElementById('selectedFileInfo');
+        const fileNameText = document.getElementById('selectedFileName');
+        const fileSizeText = document.getElementById('selectedFileSize');
+        const clearFileBtn = document.getElementById('clearSelectedFile');
+        const optionsBox = document.getElementById('conversionOptions');
+        const buttonsGrid = document.getElementById('conversionButtonsGrid');
+        const resultBox = document.getElementById('conversionResult');
+        const downloadLink = document.getElementById('downloadConvertedFile');
+        let currentConvertFile = null;
+        
+        const conversionRules = {
+            'pdf': [
+                { label: 'PDF → Word (DOCX)', endpoint: '/api/convert/pdf-to-docx', outExt: 'docx' },
+                { label: 'PDF → Images (ZIP)', endpoint: '/api/convert/pdf-to-jpg', outExt: 'zip' }
+            ],
+            'docx': [ { label: 'Word → PDF', endpoint: '/api/convert/office-to-pdf', outExt: 'pdf' } ],
+            'doc': [ { label: 'Word → PDF', endpoint: '/api/convert/office-to-pdf', outExt: 'pdf' } ],
+            'xlsx': [
+                { label: 'Excel → PDF', endpoint: '/api/convert/office-to-pdf', outExt: 'pdf' },
+                { label: 'Excel → CSV', endpoint: '/api/convert/xlsx-to-csv', outExt: 'csv' }
+            ],
+            'xls': [ { label: 'Excel → PDF', endpoint: '/api/convert/office-to-pdf', outExt: 'pdf' } ],
+            'pptx': [ { label: 'PPT → PDF', endpoint: '/api/convert/office-to-pdf', outExt: 'pdf' } ],
+            'ppt': [ { label: 'PPT → PDF', endpoint: '/api/convert/office-to-pdf', outExt: 'pdf' } ],
+            'csv': [ { label: 'CSV → Excel', endpoint: '/api/convert/csv-to-xlsx', outExt: 'xlsx' } ],
+            'txt': [ { label: 'Text → PDF', endpoint: '/api/convert/txt-to-pdf', outExt: 'pdf' } ],
+            'image': [
+                { label: 'Image → PDF', endpoint: '/api/convert/image-to-format?target_format=pdf', outExt: 'pdf' },
+                { label: 'Image → JPG', endpoint: '/api/convert/image-to-format?target_format=jpg', outExt: 'jpg' },
+                { label: 'Image → PNG', endpoint: '/api/convert/image-to-format?target_format=png', outExt: 'png' },
+                { label: 'Image → WEBP', endpoint: '/api/convert/image-to-format?target_format=webp', outExt: 'webp' },
+                { label: 'Image → Text (OCR)', endpoint: '/api/convert/image-to-text', outExt: 'txt' }
+            ]
+        };
+
+        if(dropZone) {
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-indigo-50', 'border-indigo-400'); });
+            dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('bg-indigo-50', 'border-indigo-400'); });
+            dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('bg-indigo-50', 'border-indigo-400'); if (e.dataTransfer.files.length) handleFileSelection(e.dataTransfer.files[0]); });
+        }
+        if(fileInput) fileInput.addEventListener('change', function() { if (this.files.length) handleFileSelection(this.files[0]); });
+
+        function handleFileSelection(file) {
+            currentConvertFile = file; fileNameText.textContent = file.name; fileSizeText.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+            fileInfoBox.classList.remove('hidden'); dropZone.classList.add('hidden'); resultBox.classList.add('hidden');
+
+            const ext = file.name.split('.').pop().toLowerCase();
+            let typeKey = ext; if(['jpg', 'jpeg', 'png', 'webp'].includes(ext)) typeKey = 'image';
+
+            // RAR / ZIP Handling
+            if (ext === 'rar' || ext === 'zip' || ext === '7z') {
+                optionsBox.classList.add('hidden');
+                alert(`⚠️ ${ext.toUpperCase()} ek compressed folder hai. Isko extract karein aur andar ki files upload karein.`);
+                fileInfoBox.classList.add('hidden'); dropZone.classList.remove('hidden'); return;
+            }
+
+            buttonsGrid.innerHTML = '';
+            const availableRules = conversionRules[typeKey];
+
+            if (availableRules && availableRules.length > 0) {
+                optionsBox.classList.remove('hidden');
+                availableRules.forEach(rule => {
+                    const btn = document.createElement('button');
+                    btn.className = 'py-3 px-4 rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors shadow-sm flex items-center justify-center gap-2';
+                    btn.innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left"></i> ${rule.label}`;
+                    btn.onclick = () => executeConversion(rule); buttonsGrid.appendChild(btn);
+                });
+            } else {
+                optionsBox.classList.add('hidden'); alert("Is file type ke liye abhi koi conversion available nahi hai.");
+            }
+        }
+
+        if(clearFileBtn) {
+            clearFileBtn.addEventListener('click', () => {
+                currentConvertFile = null; fileInput.value = ''; fileInfoBox.classList.add('hidden'); optionsBox.classList.add('hidden'); resultBox.classList.add('hidden'); dropZone.classList.remove('hidden');
+            });
+        }
+
+        async function executeConversion(rule) {
+            if (!currentConvertFile) return;
+            buttonsGrid.innerHTML = `<div class="col-span-full text-center py-4 text-indigo-600 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Converting your file...</div>`;
+            resultBox.classList.add('hidden'); const fd = new FormData(); fd.append('file', currentConvertFile);
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000' + rule.endpoint, { method: 'POST', body: fd });
+                if (!response.ok) throw new Error('Server error during conversion.');
+                const blob = await response.blob(); const url = URL.createObjectURL(blob);
+                resultBox.classList.remove('hidden'); downloadLink.href = url; downloadLink.download = `converted_${currentConvertFile.name.split('.')[0]}.${rule.outExt}`;
+            } catch (error) { alert('Conversion failed: ' + error.message); } 
+            finally {
+                buttonsGrid.innerHTML = '';
+                const ext = currentConvertFile.name.split('.').pop().toLowerCase(); let typeKey = ext; if(['jpg', 'jpeg', 'png', 'webp'].includes(ext)) typeKey = 'image';
+                const availableRules = conversionRules[typeKey];
+                if (availableRules) {
+                    availableRules.forEach(r => {
+                        const btn = document.createElement('button');
+                        btn.className = 'py-3 px-4 rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors shadow-sm flex items-center justify-center gap-2';
+                        btn.innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left"></i> ${r.label}`;
+                        btn.onclick = () => executeConversion(r); buttonsGrid.appendChild(btn);
+                    });
+                }
+            }
+        }
+
+        // ===== 8. PLAN REQUEST LOGIC =====
+        window.payPlan = async function(planId, amount) {
+            // Check if user is logged in first
+            const sessionResponse = await fetch('/api/auth/me');
+            if (!sessionResponse.ok) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // User is logged in - redirect to client profile
+            window.location.href = '/client';
+        };
+
+        // ===== 9. AI DOCUMENT SUMMARIZER LOGIC =====
+        const summarizerForm = document.getElementById('summarizerForm');
+        if (summarizerForm) {
+            summarizerForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const fileInput = document.getElementById('summarizerFile');
+                const summarizeBtn = document.getElementById('summarizeBtn');
+                const loadingBox = document.getElementById('summaryLoading');
+                const resultBox = document.getElementById('summaryResult');
+
+                if (!fileInput.files[0]) { alert("Please select a file first."); return; }
+                summarizeBtn.disabled = true; summarizeBtn.innerHTML = 'Processing...'; loadingBox.classList.remove('hidden'); resultBox.classList.add('hidden');
+                const fd = new FormData(); fd.append('file', fileInput.files[0]);
+
+                try {
+                    const response = await fetch('http://127.0.0.1:8000/api/summarize-document', { method: 'POST', body: fd });
+                    if (!response.ok) throw new Error("Failed to summarize document.");
+                    const data = await response.json(); loadingBox.classList.add('hidden'); resultBox.classList.remove('hidden');
+                    document.getElementById('pagesRead').innerText = `${data.total_pages_read} Pages Scanned`;
+                    
+                    const badge = document.getElementById('summaryMethodBadge');
+                    badge.innerText = data.method_used;
+                    if (data.method_used.includes("AI")) badge.className = "text-xs font-bold px-2 py-1 rounded bg-emerald-100 text-emerald-700";
+                    else badge.className = "text-xs font-bold px-2 py-1 rounded bg-amber-100 text-amber-700";
+                    
+                    document.getElementById('aiSummaryText').innerText = data.ai_summary;
+                } catch (error) { alert("Error: " + error.message); } 
+                finally {
+                    summarizeBtn.disabled = false; summarizeBtn.innerHTML = '<i class="fa-solid fa-robot mr-2"></i> Summarize Now';
+                    loadingBox.classList.add('hidden'); fileInput.value = '';
+                }
+            });
+        }      
+    });
+  </script>
+</body>
+</html>

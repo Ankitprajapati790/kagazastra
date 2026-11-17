@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin panel - KagazAstra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header class="bg-slate-900 text-white">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+      <a href="/" class="text-xl font-extrabold">📄 KagazAstra · Admin</a>
+      <div class="flex items-center gap-4 text-sm">
+        <span id="panelUser" class="hidden sm:inline"></span>
+        <a href="/" class="hover:text-emerald-300">Document tools</a>
+        <button class="logoutButton rounded-lg bg-white/10 px-3 py-1.5 hover:bg-white/20">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <main class="mx-auto max-w-7xl space-y-6 px-4 py-8">
+    <section>
+      <h1 class="text-3xl font-bold">Admin panel</h1>
+      <p class="mt-1 text-sm text-slate-500">Client accounts, platform activity, and manual demo-payment review.</p>
+    </section>
+    <p id="panelMessage" class="hidden rounded-lg p-3 text-sm" role="status"></p>
+    <section id="adminStats" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-6"></section>
+    <section class="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+      <article class="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b p-4">
+          <h2 class="text-lg font-bold">Client accounts</h2>
+          <form id="userSearchForm" class="flex gap-2">
+            <input id="userSearch" type="search" maxlength="80" placeholder="Search name or email" class="rounded-lg border px-3 py-2 text-sm">
+            <button class="rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white">Search</button>
+          </form>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Client</th><th class="p-3">Joined</th><th class="p-3">Status</th><th class="p-3">Action</th></tr></thead>
+            <tbody id="adminUsers"></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b p-4">
+          <h2 class="text-lg font-bold">Payment review</h2>
+          <select id="paymentFilter" class="rounded-lg border bg-white px-3 py-2 text-sm">
+            <option value="all">All requests</option><option value="pending">Pending</option><option value="paid">Approved</option><option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Client / plan</th><th class="p-3">Amount</th><th class="p-3">Status</th><th class="p-3">Review</th></tr></thead>
+            <tbody id="adminPayments"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script src="/static/panel.js"></script>
+</body>
+</html>
